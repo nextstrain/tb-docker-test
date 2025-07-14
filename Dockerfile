@@ -12,7 +12,10 @@ FROM nextstrain/base:latest
 COPY --from=conda-builder /opt/conda/envs/env /opt/conda/envs/env
 
 # Add environment bin to PATH
-# Note: This makes the conda-installed tools available but isn't equivalent to
-# activating the environment since micromamba itself is not part of the final
-# image.
-ENV PATH="/opt/conda/envs/env/bin:$PATH"
+# Notes:
+# 1. This makes the conda-installed tools available but isn't equivalent to
+#    activating the environment since micromamba itself is not part of the final
+#    image.
+# 2. nextstrain/base puts programs in /usr/local/bin, and those should take
+#    precedence.
+ENV PATH="/usr/local/bin:/opt/conda/envs/env/bin:$PATH"
