@@ -14,12 +14,16 @@ ENV PATH="/nextstrain/miniforge/bin:$PATH"
 # Initialize conda for interactive shell use
 RUN conda init bash
 
+# FIXME: is `umask 000` ok to use here?
+# This allows commands like `tb-profiler update_tbdb` to write to
+# /nextstrain/miniforge/envs/tb-profiler/share/tbprofiler/
+
 # Create conda environments
 COPY --chown=nextstrain:nextstrain envs/snippy.yaml /tmp/
-RUN conda env create --name snippy --file /tmp/snippy.yaml && rm /tmp/snippy.yaml
+RUN umask 000 && conda env create --name snippy --file /tmp/snippy.yaml && rm /tmp/snippy.yaml
 
 COPY --chown=nextstrain:nextstrain envs/tb-profiler.yaml /tmp/
-RUN conda env create --name tb-profiler --file /tmp/tb-profiler.yaml && rm /tmp/tb-profiler.yaml
+RUN umask 000 && conda env create --name tb-profiler --file /tmp/tb-profiler.yaml && rm /tmp/tb-profiler.yaml
 
 # Switch back to root.  The entrypoint will drop to nextstrain:nextstrain as
 # necessary when a container starts.
