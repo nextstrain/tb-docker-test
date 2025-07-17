@@ -32,9 +32,13 @@ jobs:
     - name: Build and push image
       run: |
         image_tag="ghcr.io/${{ github.repository }}:${{ github.run_id }}"
+        latest_tag="ghcr.io/${{ github.repository }}:latest"
+
         ./build \
           --tag "$image_tag" \
-          --push
+          --tag "$latest_tag" \
+          --push \
+          --cache-from=type=registry,ref="$latest_tag"
 
         cat >"$GITHUB_STEP_SUMMARY" <<~~
         Image successfully published.
