@@ -1,5 +1,7 @@
 FROM nextstrain/base:latest
 
+RUN echo MACHINE: $(uname -m)
+
 # Install Miniforge (includes conda)
 RUN curl -L "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh" -o miniforge.sh && \
     bash miniforge.sh -b -p /nextstrain/miniforge && \
@@ -11,21 +13,11 @@ ENV PATH="/nextstrain/miniforge/bin:$PATH"
 # Initialize conda for interactive shell use
 RUN conda init bash
 
-# Create conda environments
-# COPY envs/csvtk.yaml /tmp/
-# RUN conda env create --name csvtk --file /tmp/csvtk.yaml && rm /tmp/csvtk.yaml
+# Install snippy into a conda environment
+RUN conda create -y --name snippy  -c conda-forge -c bioconda sra-tools=3.2.1 snippy=4.6.0 awscli && conda clean -afy
 
-# COPY envs/nextstrain.yaml /tmp/
-# RUN conda env create --name nextstrain --file /tmp/nextstrain.yaml && rm /tmp/nextstrain.yaml
-
-# COPY envs/snippy.yaml /tmp/
-# RUN conda env create --name snippy --file /tmp/snippy.yaml && rm /tmp/snippy.yaml
-
-COPY envs/tb-profiler.yaml /tmp/
-RUN conda env create --name tb-profiler --file /tmp/tb-profiler.yaml && rm /tmp/tb-profiler.yaml
-
-# COPY envs/tsv-utils.yaml /tmp/
-# RUN conda env create --name tsv-utils --file /tmp/tsv-utils.yaml && rm /tmp/tsv-utils.yaml
+# Install tb-profiler into a conda environment
+RUN conda create -y --name tb-profiler -c conda-forge -c bioconda sra-tools=3.2.1 tb-profiler=6.6.3-0 awscli && conda clean -afy
 
 # FIXME: check permissions
 RUN chmod -R 777 /nextstrain/miniforge
