@@ -15,10 +15,10 @@ ENV PATH="/nextstrain/miniforge/bin:$PATH"
 RUN conda init bash
 
 # Create conda environments
-COPY envs/snippy.yaml /tmp/
+COPY --chown=nextstrain:nextstrain envs/snippy.yaml /tmp/
 RUN conda env create --name snippy --file /tmp/snippy.yaml && rm /tmp/snippy.yaml
 
-COPY envs/tb-profiler.yaml /tmp/
+COPY --chown=nextstrain:nextstrain envs/tb-profiler.yaml /tmp/
 RUN conda env create --name tb-profiler --file /tmp/tb-profiler.yaml && rm /tmp/tb-profiler.yaml
 
 # Switch back to root.  The entrypoint will drop to nextstrain:nextstrain as
