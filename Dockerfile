@@ -16,22 +16,25 @@ RUN conda init bash
 
 
 # Create conda environments
+# FIXME: replace chmod workaround for `tb-profiler update_tbdb` to write to
+# /nextstrain/miniforge/envs/tb-profiler/share/tbprofiler/
 
 RUN conda create -y --name snippy \
       -c conda-forge -c bioconda \
       sra-tools=3.2.1 \
       snippy=4.6.0 \
- && conda clean -afy
+ && conda clean -afy \
+ && rm -rf ~/.cache \
+ && chmod -R 777 /nextstrain/miniforge
 
-# chmod allows `tb-profiler update_tbdb` to write to
-# /nextstrain/miniforge/envs/tb-profiler/share/tbprofiler/
+
 RUN conda create -y --name tb-profiler \
       -c conda-forge -c bioconda \
       sra-tools=3.2.1 \
       tb-profiler=6.6.3-0 \
  && conda clean -afy \
- && chmod -R u+w /nextstrain/miniforge/envs/tb-profiler/share/
-
+ && rm -rf ~/.cache \
+ && chmod -R 777 /nextstrain/miniforge
 
 # Switch back to root.  The entrypoint will drop to nextstrain:nextstrain as
 # necessary when a container starts.
