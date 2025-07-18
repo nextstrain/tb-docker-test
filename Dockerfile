@@ -9,10 +9,11 @@ RUN curl -L "https://github.com/conda-forge/miniforge/releases/latest/download/M
     rm miniforge.sh
 
 # Make conda available in PATH
-ENV PATH="/nextstrain/miniforge/bin:$PATH"
+ENV PATH="/nextstrain/miniforge/condabin:$PATH"
 
 # Initialize conda for interactive shell use
-RUN conda init bash
+RUN conda init bash \
+ && conda config --set auto_activate_base false
 
 
 # Create conda environments
