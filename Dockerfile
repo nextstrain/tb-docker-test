@@ -16,8 +16,10 @@ RUN conda init bash
 
 
 # Create conda environments
-# FIXME: replace chmod workaround for `tb-profiler update_tbdb` to write to
-# /nextstrain/miniforge/envs/tb-profiler/share/tbprofiler/
+# Add global write bits, similar to what's done for /nextstrain¹, but
+# recursively on the conda environment directory. This allows `tb-profiler
+# update_tbdb` to write to the directory at run time under a different UID.
+# ¹ <https://github.com/nextstrain/docker-base/blob/9270fb321251b298b332b648f2744308bb2d89ff/Dockerfile#L430-L431>
 
 RUN conda create -y --name snippy \
       -c conda-forge -c bioconda \
@@ -25,8 +27,7 @@ RUN conda create -y --name snippy \
       snippy=4.6.0 \
  && conda clean -afy \
  && rm -rf ~/.cache \
- && chmod -R 777 /nextstrain/miniforge
-
+ && chmod -R a+rwXt /nextstrain/miniforge/envs/snippy
 
 RUN conda create -y --name tb-profiler \
       -c conda-forge -c bioconda \
@@ -34,7 +35,7 @@ RUN conda create -y --name tb-profiler \
       tb-profiler=6.6.3-0 \
  && conda clean -afy \
  && rm -rf ~/.cache \
- && chmod -R 777 /nextstrain/miniforge
+ && chmod -R a+rwXt /nextstrain/miniforge/envs/tb-profiler
 
 # Switch back to root.  The entrypoint will drop to nextstrain:nextstrain as
 # necessary when a container starts.
