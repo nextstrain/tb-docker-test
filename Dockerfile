@@ -1,18 +1,11 @@
 FROM nextstrain/base:latest
 
+# Install micromamba
+RUN curl -L "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-linux-64" -o /usr/local/bin/micromamba \
+ && chmod +x /usr/local/bin/micromamba
+
 # Run the final setup as our target user for permissions reasons.
 USER nextstrain:nextstrain
-
-# Install Miniforge (includes conda)
-RUN curl -L "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh" -o miniforge.sh && \
-    bash miniforge.sh -b -p /nextstrain/miniforge && \
-    rm miniforge.sh
-
-# Make conda available in PATH
-ENV PATH="/nextstrain/miniforge/bin:$PATH"
-
-# Initialize conda for interactive shell use
-RUN conda init bash
 
 
 # Create conda environments
@@ -21,21 +14,21 @@ RUN conda init bash
 # update_tbdb` to write to the directory at run time under a different UID.
 # ¹ <https://github.com/nextstrain/docker-base/blob/9270fb321251b298b332b648f2744308bb2d89ff/Dockerfile#L430-L431>
 
-RUN conda create -y --name snippy \
+RUN micromamba create -y --name snippy \
       -c conda-forge -c bioconda \
       sra-tools=3.2.1 \
       snippy=4.6.0 \
- && conda clean -afy \
+ && micromamba clean -afy \
  && rm -rf ~/.cache \
- && chmod -R a+rwXt /nextstrain/miniforge/envs/snippy
+ && chmod -R a+rwXt ~/.mamba/envs/snippy
 
-RUN conda create -y --name tb-profiler \
+RUN micromamba create -y --name tb-profiler \
       -c conda-forge -c bioconda \
       sra-tools=3.2.1 \
       tb-profiler=6.6.3-0 \
- && conda clean -afy \
+ && micromamba clean -afy \
  && rm -rf ~/.cache \
- && chmod -R a+rwXt /nextstrain/miniforge/envs/tb-profiler
+ && chmod -R a+rwXt ~/.mamba/envs/tb-profiler
 
 # Switch back to root.  The entrypoint will drop to nextstrain:nextstrain as
 # necessary when a container starts.
