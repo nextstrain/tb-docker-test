@@ -1,43 +1,93 @@
 FROM nextstrain/base:latest
 
-# Run the final setup as our target user for permissions reasons.
-USER nextstrain:nextstrain
+RUN apt-get update
 
-# Install Miniforge (includes conda)
-RUN curl -L "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh" -o miniforge.sh && \
-    bash miniforge.sh -b -p /nextstrain/miniforge && \
-    rm miniforge.sh
+# Install binary deps that are packaged by Debian
+RUN apt-get install --assume-yes --no-install-recommends \
+    bcftools \
+    # TODO file a bug about this not being a documented dep of
+    # tb-profiler
+    bedtools \
+    # needed to build vt
+    build-essential \
+    bwa \
+    # TODO file a bug about this not being a documented dep of
+    # tb-profiler
+    delly \
+    freebayes \
+    libbio-perl-perl \
+    # next four needed to build vt
+    libbz2-dev \
+    libcurlpp-dev \
+    liblzma-dev \
+    libssl-dev \
+    # TODO figure out a better source for this because it depends on
+    # the entire damn universe
+    libvcflib-tools \
+    minimap2 \
+    openjdk-17-jre-headless \
+    parallel \
+    samclip \
+    samtools \
+    snpeff \
+    snp-sites \
+    seqtk \
+    sra-toolkit \
+    trimmomatic \
+    # needed to build vt
+    zlib1g-dev
 
-# Make conda available in PATH
-ENV PATH="/nextstrain/miniforge/condabin:$PATH"
+# Update `pip` and install Python dependencies
+RUN pip install --upgrade pip
+RUN pip install \
+    docxtpl \
+    filelock \
+    pydantic \
+    pysam \
+    rich_argparse \
+    tomli \
+    tqdm
 
-# Initialize conda for interactive shell use
-RUN conda init bash \
- && conda config --set auto_activate_base false
+# Check out packages we want to build from source
+RUN git clone https://github.com/atks/vt.git                      /opt/vt/
+RUN git clone https://github.com/jodyphelan/itol-config           /opt/itol-config
+RUN git clone https://github.com/jodyphelan/pathogen-profiler.git /opt/pathogen-profiler
+RUN git clone https://github.com/jodyphelan/TBProfiler.git        /opt/TBProfiler
+RUN git clone https://github.com/tseemann/snippy.git              /opt/snippy
 
+# build vt
+RUN cd /opt/vt && \
+    git submodule update --init --recursive && \
+    make -j10 && \
+    cp vt /usr/bin/
 
-# Create conda environments
-# Add global write bits, similar to what's done for /nextstrain¹, but
-# recursively on the conda environment directory. This allows `tb-profiler
-# update_tbdb` to write to the directory at run time under a different UID.
-# ¹ <https://github.com/nextstrain/docker-base/blob/9270fb321251b298b332b648f2744308bb2d89ff/Dockerfile#L430-L431>
+# apply monkey patch to pathogen-profiler
+COPY pathogen-profiler.patch /tmp/pathogen-profiler.patch
+RUN pushd /opt/pathogen-profiler && \
+    git apply /tmp/pathogen-profiler.patch && \
+    rm /tmp/pathogen-profiler.patch && \
+    popd
 
-RUN conda create -y --name snippy \
-      -c conda-forge -c bioconda \
-      sra-tools=3.2.1 \
-      snippy=4.6.0 \
- && conda clean -afy \
- && rm -rf ~/.cache \
- && chmod -R a+rwXt /nextstrain/miniforge/envs/snippy
+# don't let snippy use the embedded linux binaries by mistake
+RUN chmod -x /opt/snippy/binaries/linux/*
 
-RUN conda create -y --name tb-profiler \
-      -c conda-forge -c bioconda \
-      sra-tools=3.2.1 \
-      tb-profiler=6.6.3-0 \
- && conda clean -afy \
- && rm -rf ~/.cache \
- && chmod -R a+rwXt /nextstrain/miniforge/envs/tb-profiler
+# Build/install those things
+RUN pushd /opt/itol-config       && pip install . && popd
+RUN pushd /opt/pathogen-profiler && pip install . && popd
+RUN pushd /opt/TBProfiler        && pip install . && popd
 
-# Switch back to root.  The entrypoint will drop to nextstrain:nextstrain as
-# necessary when a container starts.
-USER root
+# Set up tb-profiler run area and the one file it won't bootstrap
+RUN mkdir -p /usr/local/share/tbprofiler/snpeff && \
+    touch /usr/local/share/tbprofiler/snpeff/snpEff.config && \
+    chmod -R 777 /usr/local/share/tbprofiler
+
+# inject the trimmomatic wrapper script that tb-profiler seems to be
+# expecting, and symlink the JAR file to where that wrapper expects it
+# to be…
+COPY trimmomatic /usr/bin/trimmomatic
+RUN chmod +x /usr/bin/trimmomatic && \
+    ln -s /usr/share/java/trimmomatic.jar /usr/bin/
+
+# Uncomment this if you need a persistent entrypoint so you can shell into the container
+# CMD tail -f /dev/null
+# USER root

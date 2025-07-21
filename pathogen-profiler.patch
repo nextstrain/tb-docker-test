@@ -1,0 +1,25 @@
+diff --git i/pathogenprofiler/hgvs.py w/pathogenprofiler/hgvs.py
+index 1994461..8f9f26a 100644
+--- i/pathogenprofiler/hgvs.py
++++ w/pathogenprofiler/hgvs.py
+@@ -204,6 +204,7 @@ def get_ann(variants: List[dict], snpEffDB: str, db_dir:str):
+     i = 0
+     for l in cmd_out(f"snpEff ann -noLog -noStats -c {db_dir}/snpeff/snpEff.config {snpEffDB} {uuid}"):
+         if l[0]=="#": continue
++        if l.startswith("ann "): continue
+         row = l.strip().split()
+         for ann in row[7].split(';')[0].split(","):
+             a = ann.split("|")
+diff --git i/pathogenprofiler/utils.py w/pathogenprofiler/utils.py
+index dd3263b..634a321 100644
+--- i/pathogenprofiler/utils.py
++++ w/pathogenprofiler/utils.py
+@@ -26,7 +26,7 @@ shared_dict = {
+ def get_version(tool):
+     cmds = {
+         'bcftools': 'bcftools --version',
+-        'samtools': 'samtools --version',
++        'samtools': 'samtools --version | head -1',
+         'delly': 'delly --version',
+         'bwa': 'bwa',
+         'trimmomatic': 'trimmomatic -version',
