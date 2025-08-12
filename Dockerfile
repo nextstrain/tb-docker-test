@@ -33,10 +33,17 @@ RUN conda create -y --name snippy \
 RUN conda create -y --name tb-profiler \
       -c conda-forge -c bioconda \
       sra-tools=3.2.1 \
-      tb-profiler=6.6.3-0 \
+      tb-profiler=6.6.5 \
  && conda clean -afy \
  && rm -rf ~/.cache \
  && chmod -R a+rwXt /nextstrain/miniforge/envs/tb-profiler
+
+RUN conda create -y --name duckdb \
+      -c conda-forge \
+      duckdb-cli \
+ && conda clean -afy \
+ && rm -rf ~/.cache \
+ && chmod -R a+rwXt /nextstrain/miniforge/envs/duckdb
 
 # Switch back to root.  The entrypoint will drop to nextstrain:nextstrain as
 # necessary when a container starts.
